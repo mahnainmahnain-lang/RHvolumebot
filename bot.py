@@ -23,6 +23,10 @@ from spike_detector import check_for_spikes
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("rh_volume_bot")
 
+# httpx logs the full request URL at INFO level, which for Telegram's API
+# includes your bot token - quiet it down so the token never hits the logs
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     state = load_state()
