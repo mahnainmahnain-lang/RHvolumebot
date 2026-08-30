@@ -17,7 +17,8 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 
 from config import TELEGRAM_BOT_TOKEN, CHECK_INTERVAL_MINUTES
 from state import load_state, save_state, add_subscriber, remove_subscriber
-from blockscout import get_all_tokens
+from blockscout import get_all_token_addresses
+from dexscreener import enrich_with_volume
 from spike_detector import check_for_spikes
 
 logging.basicConfig(level=logging.INFO)
@@ -63,7 +64,8 @@ async def check_job(context: ContextTypes.DEFAULT_TYPE):
     state = load_state()
 
     try:
-        tokens = await get_all_tokens()
+        tokens = await get_all_token_addresses()
+        tokens = await enrich_with_volume(tokens)
     except Exception as e:
         log.exception("Failed to fetch tokens")
         return
