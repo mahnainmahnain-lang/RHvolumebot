@@ -9,8 +9,15 @@ load_dotenv()
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 
-# Robinhood Chain's own free block explorer API - no key needed
+# Robinhood Chain's own free block explorer API - no key needed.
+# Used only to discover every token contract that exists on the chain.
 BLOCKSCOUT_BASE_URL = "https://robinhoodchain.blockscout.com/api/v2"
+
+# Dexscreener's free public API - no key needed. Used for actual
+# trading volume, since it tracks live DEX activity much better than
+# Blockscout does for brand-new tokens.
+DEXSCREENER_BASE_URL = "https://api.dexscreener.com"
+DEXSCREENER_CHAIN_ID = "robinhood"
 
 # --- Scan behavior ---
 
