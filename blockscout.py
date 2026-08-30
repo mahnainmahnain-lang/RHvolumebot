@@ -6,6 +6,14 @@ MAX_TOKEN_PAGES as a safety cap.
 import httpx
 from config import BLOCKSCOUT_BASE_URL, MAX_TOKEN_PAGES
 
+# The explorer sits behind Cloudflare, which blocks httpx's default
+# User-Agent as a bot. A normal-looking one avoids that.
+_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "application/json",
+}
+
 
 async def get_all_tokens() -> list[dict]:
     """
@@ -20,7 +28,7 @@ async def get_all_tokens() -> list[dict]:
     tokens = []
     params = {}
 
-    async with httpx.AsyncClient(timeout=30) as client:
+    async with httpx.AsyncClient(timeout=30, headers=_HEADERS) as client:
         for _ in range(MAX_TOKEN_PAGES):
             resp = await client.get(f"{BLOCKSCOUT_BASE_URL}/tokens", params=params)
             resp.raise_for_status()
