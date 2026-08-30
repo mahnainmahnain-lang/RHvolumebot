@@ -1,7 +1,9 @@
 """
-Pulls the token list from Robinhood Chain's own free explorer API
-(Blockscout) - no key required. Paginates through results up to
-MAX_TOKEN_PAGES as a safety cap.
+Discovers every token contract deployed on Robinhood Chain via the free
+explorer API (Blockscout) - no key required. This does NOT give us
+reliable volume data (see dexscreener.py for that) - it just gives us
+the full list of token addresses to check, since Blockscout indexes
+every deployed contract regardless of whether it has trading activity.
 """
 import httpx
 from config import BLOCKSCOUT_BASE_URL, MAX_TOKEN_PAGES
@@ -15,15 +17,12 @@ _HEADERS = {
 }
 
 
-async def get_all_tokens() -> list[dict]:
+async def get_all_token_addresses() -> list[dict]:
     """
-    Returns [{"address": str, "symbol": str, "name": str, "volume_24h": float}, ...]
-    for every token the explorer returns, up to the page cap.
-
-    NOTE: this hasn't been run against the live API yet. If field names
-    come back different (e.g. volume_24h missing or under a different
-    key) once you're testing for real, send me the raw JSON and I'll
-    adjust the parsing immediately.
+    Returns [{"address": str, "symbol": str, "name": str}, ...] for every
+    token the explorer returns, up to the page cap. No volume data here -
+    Blockscout's own volume figures are unreliable for brand-new tokens
+    without integrated price feeds, which is most memecoins on this chain.
     """
     tokens = []
     params = {}
@@ -35,13 +34,13 @@ async def get_all_tokens() -> list[dict]:
             data = resp.json()
 
             for item in data.get("items", []):
-                volume = item.get("volume_24h")
-                tokens.append({
-                    "address": item.get("address"),
-                    "symbol": item.get("symbol"),
-                    "name": item.get("name"),
-                    "volume_24h": float(volume) if volume is not None else 0.0,
-                })
+                address = item.get("address")
+                if address:
+                    tokens.append({
+                        "address": address,
+                        "symbol": item.get("symbol"),
+                        "name": item.get("name"),
+                    })
 
             next_page = data.get("next_page_params")
             if not next_page:
