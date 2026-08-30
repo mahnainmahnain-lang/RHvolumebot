@@ -76,12 +76,19 @@ async def check_job(context: ContextTypes.DEFAULT_TYPE):
         return
 
     for spike in spikes:
-        message = (
-            f"🚨 *Volume spike*: {spike['name']} ({spike['symbol']})\n"
-            f"~${spike['cycle_volume']:,.0f} traded this cycle vs a normal "
-            f"~${spike['baseline_avg']:,.0f} ({spike['multiplier']}x)\n"
-            f"`{spike['address']}`"
-        )
+        if spike["multiplier"] is not None:
+            message = (
+                f"🚨 *Volume spike*: {spike['name']} ({spike['symbol']})\n"
+                f"~${spike['cycle_volume']:,.0f} traded this cycle vs a normal "
+                f"~${spike['baseline_avg']:,.0f} ({spike['multiplier']}x)\n"
+                f"`{spike['address']}`"
+            )
+        else:
+            message = (
+                f"🚨 *New activity*: {spike['name']} ({spike['symbol']})\n"
+                f"~${spike['cycle_volume']:,.0f} traded this cycle - previously little/no volume\n"
+                f"`{spike['address']}`"
+            )
         for chat_id in state["subscribers"]:
             try:
                 await context.bot.send_message(chat_id=chat_id, text=message, parse_mode="Markdown")
