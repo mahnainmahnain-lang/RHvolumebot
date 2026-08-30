@@ -27,8 +27,15 @@ ROLLING_HISTORY_LENGTH = 6
 
 # Ignore tokens whose recent average volume is below this - otherwise a
 # token going from $2 to $20 in volume technically "spikes 10x" but is
-# meaningless noise
+# meaningless noise. Only applies to tokens that DO have some baseline -
+# see NEW_ACTIVITY_THRESHOLD_USD below for tokens with none.
 MIN_BASELINE_VOLUME_USD = 50
+
+# For tokens with little/no prior volume, a relative multiplier doesn't
+# mean much (5x of $1 is still nothing). Instead, flag them if a single
+# cycle brings in at least this much fresh volume - this is what catches
+# a coin going from dead/new straight to actively trading.
+NEW_ACTIVITY_THRESHOLD_USD = 500
 
 # Safety cap on how many pages of tokens to pull from the explorer per
 # check, so this stays fast even if the chain grows a lot. Each page is
