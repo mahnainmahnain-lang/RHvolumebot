@@ -3,7 +3,7 @@ Simple JSON-file persistence - no database needed for this scale.
 
 Stores:
 - subscribers: list of Telegram chat_ids who get alerts
-- token_history: {token_address: [{"time": unix_ts, "volume_24h": float}, ...]}
+- token_history: {token_address: [{"time": unix_ts, "volume_h1": float}, ...]}
   (kept trimmed to ROLLING_HISTORY_LENGTH + 1 entries per token)
 """
 import json
@@ -41,9 +41,9 @@ def remove_subscriber(state: dict, chat_id: int) -> bool:
     return True
 
 
-def record_reading(state: dict, token_address: str, timestamp: int, volume_24h: float) -> None:
+def record_reading(state: dict, token_address: str, timestamp: int, volume_h1: float) -> None:
     history = state["token_history"].setdefault(token_address, [])
-    history.append({"time": timestamp, "volume_24h": volume_24h})
+    history.append({"time": timestamp, "volume_h1": volume_h1})
     # Keep only what we need: enough past cycles for the baseline, plus this one
     max_len = ROLLING_HISTORY_LENGTH + 1
     if len(history) > max_len:
