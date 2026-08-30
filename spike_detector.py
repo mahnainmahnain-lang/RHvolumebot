@@ -1,8 +1,8 @@
 """
-Takes a fresh snapshot of every token's volume_24h, works out how much
-volume happened just in THIS cycle (current reading minus last
-reading), compares that to the token's recent average, and flags
-anything that jumped by SPIKE_MULTIPLIER or more.
+Takes a fresh snapshot of every token's 1-hour volume (from Dexscreener),
+works out how much NEW volume happened just in this cycle (current
+reading minus last reading), compares that to the token's recent
+average, and flags anything that jumped by SPIKE_MULTIPLIER or more.
 """
 import time
 from config import SPIKE_MULTIPLIER, ROLLING_HISTORY_LENGTH, MIN_BASELINE_VOLUME_USD, NEW_ACTIVITY_THRESHOLD_USD
@@ -27,13 +27,13 @@ def check_for_spikes(state: dict, tokens_snapshot: list[dict]) -> list[dict]:
         history = state["token_history"].get(address, [])
 
         if len(history) >= 1:
-            previous_volume = history[-1]["volume_24h"]
-            cycle_volume = max(token["volume_24h"] - previous_volume, 0.0)
+            previous_volume = history[-1].get("volume_h1", 0.0)
+            cycle_volume = max(token["volume_h1"] - previous_volume, 0.0)
 
             # Build the baseline from prior cycle-over-cycle deltas
             past_deltas = []
             for i in range(1, len(history)):
-                delta = max(history[i]["volume_24h"] - history[i - 1]["volume_24h"], 0.0)
+                delta = max(history[i].get("volume_h1", 0.0) - history[i - 1].get("volume_h1", 0.0), 0.0)
                 past_deltas.append(delta)
 
             if len(past_deltas) >= ROLLING_HISTORY_LENGTH:
@@ -65,6 +65,6 @@ def check_for_spikes(state: dict, tokens_snapshot: list[dict]) -> list[dict]:
                             "multiplier": None,
                         })
 
-        record_reading(state, address, now, token["volume_24h"])
+        record_reading(state, address, now, token["volume_h1"])
 
     return spikes
