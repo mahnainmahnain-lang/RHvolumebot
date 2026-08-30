@@ -5,7 +5,7 @@ reading), compares that to the token's recent average, and flags
 anything that jumped by SPIKE_MULTIPLIER or more.
 """
 import time
-from config import SPIKE_MULTIPLIER, ROLLING_HISTORY_LENGTH, MIN_BASELINE_VOLUME_USD
+from config import SPIKE_MULTIPLIER, ROLLING_HISTORY_LENGTH, MIN_BASELINE_VOLUME_USD, NEW_ACTIVITY_THRESHOLD_USD
 from state import record_reading
 
 
@@ -13,7 +13,8 @@ def check_for_spikes(state: dict, tokens_snapshot: list[dict]) -> list[dict]:
     """
     Updates state's token_history with this snapshot, and returns a list
     of spikes found: [{"address", "symbol", "name", "cycle_volume",
-    "baseline_avg", "multiplier"}, ...]
+    "baseline_avg", "multiplier"}, ...]. "multiplier" is None for tokens
+    that had no meaningful baseline (brand-new activity, not a relative jump).
     """
     now = int(time.time())
     spikes = []
@@ -38,15 +39,31 @@ def check_for_spikes(state: dict, tokens_snapshot: list[dict]) -> list[dict]:
             if len(past_deltas) >= ROLLING_HISTORY_LENGTH:
                 baseline_avg = sum(past_deltas) / len(past_deltas)
 
-                if baseline_avg >= MIN_BASELINE_VOLUME_USD and cycle_volume >= baseline_avg * SPIKE_MULTIPLIER:
-                    spikes.append({
-                        "address": address,
-                        "symbol": token["symbol"],
-                        "name": token["name"],
-                        "cycle_volume": round(cycle_volume, 2),
-                        "baseline_avg": round(baseline_avg, 2),
-                        "multiplier": round(cycle_volume / baseline_avg, 1) if baseline_avg else None,
-                    })
+                if baseline_avg >= MIN_BASELINE_VOLUME_USD:
+                    # Established token - flag if this cycle is a big
+                    # multiple of its own normal volume
+                    if cycle_volume >= baseline_avg * SPIKE_MULTIPLIER:
+                        spikes.append({
+                            "address": address,
+                            "symbol": token["symbol"],
+                            "name": token["name"],
+                            "cycle_volume": round(cycle_volume, 2),
+                            "baseline_avg": round(baseline_avg, 2),
+                            "multiplier": round(cycle_volume / baseline_avg, 1),
+                        })
+                else:
+                    # Little/no prior volume - a multiplier is meaningless
+                    # here, so flag on absolute fresh volume instead. This
+                    # is what catches a dead/new token suddenly trading.
+                    if cycle_volume >= NEW_ACTIVITY_THRESHOLD_USD:
+                        spikes.append({
+                            "address": address,
+                            "symbol": token["symbol"],
+                            "name": token["name"],
+                            "cycle_volume": round(cycle_volume, 2),
+                            "baseline_avg": round(baseline_avg, 2),
+                            "multiplier": None,
+                        })
 
         record_reading(state, address, now, token["volume_24h"])
 
